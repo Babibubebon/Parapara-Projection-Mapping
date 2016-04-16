@@ -1,6 +1,7 @@
 var ParaparaScreen = function (screen) {
   this.frames = [];
   this.currentIndex = 0;
+  this.isPlaying = false;
   
   if (screen) {
     this.canvas = screen;
@@ -43,14 +44,18 @@ ParaparaScreen.prototype.addFrame = function (index) {
 ParaparaScreen.prototype.removeFrame = function (index) {
   if (0 <= index && index < this.frames.length) {
     this.frames.splice(index, 1);
-  }
-  if (this.frames.length > 0 && this.currentIndex === index) {
-    // 現在のフレームを削除する場合
-    if (this.frames.length === index) {
-      // 末尾
-      index = index - 1;
+  
+    if (this.currentIndex === index && this.frames.length > 0) {
+      // 現在のフレームを削除する場合
+      if (index >= this.frames.length) {
+        index = this.frames.length - 1; // 末尾
+      }
+      this.context.putImageData(this.frames[index], 0, 0);
+      this.changeCurrentFrame(index);
     }
-    this.context.putImageData(this.frames[index], 0, 0);
+    if (index < this.currentIndex) {
+      this.currentIndex--;
+    }
   }
 };
 
@@ -64,6 +69,30 @@ ParaparaScreen.prototype.changeCurrentFrame = function (index) {
     
     this.currentIndex = index;
   }
+};
+
+ParaparaScreen.prototype.play = function (interval) {
+  if (this.isPlaying !== false) {
+    return false;
+  }
+  if (interval === undefined) {
+    interval = 250;
+  }
+  
+  var playingFrame = 0;
+  this.isPlaying = setInterval(function() {
+    playingFrame = (playingFrame + 1) % this.frames.length;
+    this.changeCurrentFrame(playingFrame);
+  }.bind(this), interval);
+};
+
+ParaparaScreen.prototype.stop = function () {
+  if (this.isPlaying === false) {
+    return false;
+  }
+  clearInterval(this.isPlaying);
+  this.isPlaying = false;
+  this.changeCurrentFrame(this.currentIndex);
 };
 
 ParaparaScreen.prototype.draw = function (begin, end, options) {
